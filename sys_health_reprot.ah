@@ -1,0 +1,21 @@
+#!/bin/bash
+set -euo pipefail
+
+OUT="/var/log/sys_report-$(date +%F_%H%M%S).txt"
+
+{
+  echo "# Host: $(hostname)"
+  echo "# IP:   $(hostname -I 2>/dev/null || ip -4 -o addr show | awk '{print $4}' | cut -d/ -f1 | xargs)"
+  echo -e "\n== Disk usage (df -h) =="
+  df -h
+  echo -e "\n== Memory (free -h) =="
+  free -h
+  echo -e "\n== Top 5 by MEM (ps aux) =="
+  ps aux --sort=-%mem | head -n 6
+  echo -e "\n== Listening TCP ports (ss -ltnp) =="
+  ss -ltnp || true
+  echo -e "\n== Enabled services (systemctl list-unit-files | grep enabled) =="
+  systemctl list-unit-files --type=service | grep enabled || true
+} > "$OUT"
+
+echo "Report saved: $OUT"
